@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use miniserde::{Deserialize, Serialize};
 
 use crate::{dag, db};
 
@@ -76,7 +76,7 @@ pub struct TryPushRequest {
 #[derive(Serialize)]
 pub struct TryPushResponse {
     #[serde(rename = "httpRequestInfo")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    //#[serde(skip_serializing_if = "Option::is_none")]
     pub http_request_info: Option<HttpRequestInfo>,
 }
 
@@ -99,7 +99,7 @@ pub enum BeginTryPullError {
     InternalNoMainHeadError,
     InternalProgrammerError(db::InternalProgrammerError),
     InternalRebuildIndexError(db::CreateIndexError),
-    InvalidBaseSnapshotCookie(serde_json::error::Error),
+    InvalidBaseSnapshotCookie(miniserde::Error),
     LockError(dag::Error),
     MainHeadDisappeared,
     NoBaseSnapshot(db::BaseSnapshotError),

@@ -1,6 +1,6 @@
 use crate::db;
 use crate::util::rlog;
-use serde::Deserialize;
+use miniserde::Deserialize;
 
 #[derive(Deserialize)]
 #[cfg_attr(test, derive(Clone, Debug, PartialEq))]

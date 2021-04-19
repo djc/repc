@@ -244,7 +244,8 @@ impl Commit {
         use LoadError::*;
         // zero is allowed for last_mutation_id (for the first snapshot)
         let cookie_json_bytes = snapshot_meta.cookie_json().ok_or(MissingCookie)?;
-        let _: serde_json::Value = serde_json::from_slice(cookie_json_bytes)
+        let cookie_json_str = std::str::from_utf8(cookie_json_bytes).unwrap();
+        let _: miniserde::json::Value = miniserde::json::from_str(cookie_json_str)
             .map_err(|e| InvalidCookieJson(e.to_string()))?;
         Ok(())
     }
@@ -395,12 +396,13 @@ impl Commit {
     // Parts are (last_mutation_id, cookie).
     pub fn snapshot_meta_parts(
         c: &Commit,
-    ) -> Result<(u64, serde_json::Value), InternalProgrammerError> {
+    ) -> Result<(u64, miniserde::json::Value), InternalProgrammerError> {
         use InternalProgrammerError::*;
         match c.meta().typed() {
             MetaTyped::Snapshot(sm) => Ok((
                 sm.last_mutation_id(),
-                serde_json::from_slice(sm.cookie_json()).map_err(InvalidCookieJson)?,
+                miniserde::json::from_str(std::str::from_utf8(sm.cookie_json()).unwrap())
+                    .map_err(InvalidCookieJson)?,
             )),
             _ => Err(WrongType(str!("Snapshot meta expected"))),
         }
@@ -562,7 +564,7 @@ pub enum FromHashError {
 
 #[derive(Debug)]
 pub enum InternalProgrammerError {
-    InvalidCookieJson(serde_json::error::Error),
+    InvalidCookieJson(miniserde::Error),
     WrongType(String),
 }
 

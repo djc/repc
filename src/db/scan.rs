@@ -1,6 +1,6 @@
 use super::index;
 use crate::prolly;
-use serde::{Deserialize, Serialize};
+use miniserde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use str_macro::str;
 

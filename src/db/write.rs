@@ -25,7 +25,7 @@ struct LocalMeta {
 
 struct SnapshotMeta {
     last_mutation_id: u64,
-    cookie: serde_json::Value,
+    cookie: miniserde::json::Value,
 }
 
 pub struct Write<'a> {
@@ -51,7 +51,7 @@ pub async fn init_db(dag_write: dag::Write<'_>, head_name: &str) -> Result<Strin
         basis: None,
         meta: Meta::Snapshot(SnapshotMeta {
             last_mutation_id: 0,
-            cookie: serde_json::Value::default(), // Value::Null()
+            cookie: miniserde::json::Value::default(), // Value::Null()
         }),
         indexes: HashMap::new(),
     };
@@ -87,7 +87,7 @@ impl<'a> Write<'a> {
     pub async fn new_snapshot(
         whence: Whence,
         last_mutation_id: u64,
-        cookie: serde_json::Value,
+        cookie: miniserde::json::Value,
         dag_write: dag::Write<'a>,
         indexes: HashMap<String, index::Index>,
     ) -> Result<Write<'a>, ReadCommitError> {
@@ -385,7 +385,7 @@ impl<'a> Write<'a> {
                 commit::Commit::new_snapshot(
                     basis_hash.as_deref(),
                     *last_mutation_id,
-                    &serde_json::to_vec(cookie).map_err(SerializeCookieError)?,
+                    miniserde::json::to_string(cookie).as_bytes(),
                     &value_hash,
                     &index_metas,
                 )
@@ -451,8 +451,8 @@ pub enum CommitError {
     IndexChangeMustNotChangeMutationID,
     IndexChangeMustNotChangeValueHash,
     IndexFlushError(index::IndexFlushError),
-    SerializeArgsError(serde_json::error::Error),
-    SerializeCookieError(serde_json::error::Error),
+    SerializeArgsError(miniserde::Error),
+    SerializeCookieError(miniserde::Error),
 }
 
 #[derive(Debug, PartialEq)]
@@ -608,7 +608,7 @@ mod tests {
         let mut w = Write::new_snapshot(
             Whence::Head(str!(db::DEFAULT_HEAD_NAME)),
             1,
-            json!("cookie"),
+            miniserde::json::Value::String("cookie".to_owned()),
             ds.write(LogContext::new()).await.unwrap(),
             HashMap::new(),
         )

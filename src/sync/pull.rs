@@ -12,7 +12,7 @@ use crate::util::rlog;
 use crate::util::rlog::LogContext;
 use async_trait::async_trait;
 use log::log_enabled;
-use serde::{Deserialize, Serialize};
+use miniserde::{Deserialize, Serialize};
 use std::collections::hash_map::HashMap;
 use std::default::Default;
 use std::fmt::Debug;
@@ -56,7 +56,7 @@ pub async fn begin_pull(
 
     let pull_req = PullRequest {
         client_id,
-        cookie: base_cookie.clone(),
+        cookie: base_cookie.clone().unwrap_or(miniserde::json::Value::Null),
         last_mutation_id: base_snapshot.mutation_id(),
         pull_version: PULL_VERSION,
         schema_version,
@@ -312,8 +312,8 @@ pub async fn maybe_end_try_pull(
 pub struct PullRequest {
     #[serde(rename = "clientID")]
     pub client_id: String,
-    #[serde(default)]
-    pub cookie: serde_json::Value,
+    //#[serde(default)]
+    pub cookie: Option<miniserde::json::Value>,
     #[serde(rename = "lastMutationID")]
     pub last_mutation_id: u64,
     #[serde(rename = "pullVersion")]
@@ -328,8 +328,8 @@ pub struct PullRequest {
 #[derive(Deserialize)]
 #[cfg_attr(test, derive(Clone, Debug, PartialEq))]
 pub struct PullResponse {
-    #[serde(default)]
-    pub cookie: serde_json::Value,
+    //#[serde(default)]
+    pub cookie: Option<miniserde::json::Value>,
     #[serde(rename = "lastMutationID")]
     pub last_mutation_id: u64,
     pub patch: Vec<patch::Operation>,
@@ -387,7 +387,7 @@ impl Puller for FetchPuller<'_> {
             },
         };
         let pull_response = if ok {
-            Some(serde_json::from_str(&http_resp.body()).map_err(InvalidResponse)?)
+            Some(miniserde::json::from_str(&http_resp.body()).map_err(InvalidResponse)?)
         } else {
             None
         };
@@ -403,7 +403,7 @@ pub fn new_pull_http_request(
     request_id: &str,
 ) -> Result<http::Request<String>, PullError> {
     use PullError::*;
-    let body = serde_json::to_string(pull_req).map_err(SerializeRequestError)?;
+    let body = miniserde::json::to_string(pull_req);
     let builder = http::request::Builder::new();
     let http_req = builder
         .method("POST")
@@ -420,8 +420,8 @@ pub fn new_pull_http_request(
 pub enum PullError {
     FetchFailed(FetchError),
     InvalidRequest(http::Error),
-    InvalidResponse(serde_json::error::Error),
-    SerializeRequestError(serde_json::error::Error),
+    InvalidResponse(miniserde::Error),
+    SerializeRequestError(miniserde::Error),
 }
 
 #[cfg(test)]
@@ -461,7 +461,7 @@ mod tests {
                 schema_version: str!("")
             };
             // EXP_BODY must be 'static to be used in HTTP handler closure.
-            static ref EXP_BODY: String = serde_json::to_string(&*PULL_REQ).unwrap();
+            static ref EXP_BODY: String = miniserde::json::to_string(&*PULL_REQ).unwrap();
         }
         let pull_auth = "pull-auth";
         let request_id = "request_id";

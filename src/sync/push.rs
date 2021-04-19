@@ -3,7 +3,7 @@ use crate::fetch::errors::FetchError;
 use crate::{dag, db, util::rlog::LogContext};
 use crate::{fetch, util::rlog};
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
+use miniserde::{Deserialize, Serialize};
 use str_macro::str;
 
 // Push Versions
@@ -28,14 +28,15 @@ pub struct PushRequest {
 pub struct Mutation {
     pub id: u64,
     pub name: String,
-    pub args: serde_json::Value,
+    pub args: miniserde::json::Value,
 }
 
 impl std::convert::From<db::LocalMeta<'_>> for Mutation {
     fn from(lm: db::LocalMeta<'_>) -> Self {
         // TODO clean unwraps:
         // See https://github.com/rocicorp/repc/issues/139
-        let args = serde_json::from_slice(lm.mutator_args_json()).unwrap();
+        let s = std::str::from_utf8(lm.mutator_args_json()).unwrap();
+        let args = miniserde::json::from_str(s).unwrap();
         Mutation {
             id: lm.mutation_id(),
             name: lm.mutator_name().to_string(),

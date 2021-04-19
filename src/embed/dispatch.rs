@@ -121,7 +121,7 @@ async fn do_open(conns: &mut ConnMap, req: &Request) -> Response {
         .into());
     }
 
-    let open_req = serde_wasm_bindgen::from_value::<OpenRequest>(req.data.clone())
+    let open_req = JsValue::into_miniserde::<OpenRequest>(&req.data)
         .map_err(|e| JsValue::from_str(&format!("Failed to read open request options: {}", e)))?;
 
     let kv: Box<dyn Store> = if open_req.use_memstore {

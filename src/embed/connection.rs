@@ -39,25 +39,25 @@ type TxnMap<'a> = RwLock<HashMap<u32, RwLock<Transaction<'a>>>>;
 
 #[derive(Debug)]
 enum FromJsError {
-    DeserializeError(serde_wasm_bindgen::Error),
+    DeserializeError(miniserde::Error),
 }
 
-fn from_js<T: serde::de::DeserializeOwned>(data: JsValue) -> Result<T, String> {
+fn from_js<T: miniserde::de::Deserialize>(data: JsValue) -> Result<T, String> {
     use FromJsError::*;
-    serde_wasm_bindgen::from_value(data)
+    JsValue::into_miniserde(&data)
         .map_err(DeserializeError)
         .map_err(to_debug)
 }
 
 #[derive(Debug)]
 enum ToJsError {
-    SerializeError(serde_wasm_bindgen::Error),
+    SerializeError(miniserde::Error),
 }
 
-fn to_js<T: serde::Serialize, E: std::fmt::Debug>(res: Result<T, E>) -> Result<JsValue, JsValue> {
+fn to_js<T: miniserde::Serialize, E: std::fmt::Debug>(res: Result<T, E>) -> Result<JsValue, JsValue> {
     use ToJsError::*;
     match res {
-        Ok(v) => Ok(serde_wasm_bindgen::to_value(&v)
+        Ok(v) => Ok(JsValue::from_miniserde(&v)
             .map_err(SerializeError)
             .map_err(to_debug)?),
         Err(v) => Err(JsValue::from_str(&to_debug(v))),

@@ -1,7 +1,7 @@
 #![allow(clippy::redundant_pattern_matching)] // For derive(Deserialize).
 
 use crate::db;
-use serde::{Deserialize, Serialize};
+use miniserde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct OpenRequest {
@@ -25,7 +25,7 @@ pub struct OpenTransactionRequest {
     pub name: Option<String>, // not present in read transactions
     pub args: Option<String>, // not present in read transactions
     #[serde(rename = "rebaseOpts")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    //#[serde(skip_serializing_if = "Option::is_none")]
     pub rebase_opts: Option<RebaseOpts>,
 }
 
@@ -67,14 +67,14 @@ pub struct CloseTransactionResponse {}
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TransactionRequest {
     #[serde(rename = "transactionId")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    //#[serde(skip_serializing_if = "Option::is_none")]
     pub transaction_id: Option<u32>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GetRootRequest {
     #[serde(rename = "headName")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    //#[serde(skip_serializing_if = "Option::is_none")]
     pub head_name: Option<String>,
 }
 
@@ -104,7 +104,7 @@ pub struct GetRequest {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GetResponse {
-    #[serde(skip_serializing_if = "Option::is_none")]
+    //#[serde(skip_serializing_if = "Option::is_none")]
     pub value: Option<String>,
     pub has: bool, // Second to avoid trailing comma if value == None.
 }
@@ -121,7 +121,7 @@ pub struct ScanRequest {
     //
     // TODO say more about what it should/not do, how it can stop
     //      the scan, etc.
-    #[serde(skip)]
+    //#[serde(skip)]
     pub receiver: Option<js_sys::Function>,
 }
 #[derive(Debug)]

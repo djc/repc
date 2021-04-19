@@ -1,0 +1,4 @@
+- No enums (`patch::Operation`)
+- Only rename attributes (no `skip_if_none`, `default`, `skip`)
+- No JSON pointer support (`index::get_index_keys()`)
+- `Value` is not `PartialEq`

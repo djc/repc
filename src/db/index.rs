@@ -2,8 +2,8 @@ use super::commit;
 use crate::dag;
 use crate::prolly;
 use async_std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use miniserde::json::Value;
+use miniserde::{Deserialize, Serialize};
 
 #[derive(Debug)]
 pub struct Index {
@@ -143,7 +143,9 @@ fn get_index_keys(
     use GetIndexKeysError::*;
     // TODO: It's crazy to decode the entire value just to evaluate the json pointer.
     // There should be some way to shortcut this. Halp @arv.
-    let value: Value = serde_json::from_slice(val).map_err(|e| DeserializeError(e.to_string()))?;
+    let val_str = std::str::from_utf8(val).unwrap();
+    let value: Value =
+        miniserde::json::from_str(val_str).map_err(|e| DeserializeError(e.to_string()))?;
     let target = value.pointer(json_pointer);
     if target.is_none() {
         return Err(NoValueAtPath(json_pointer.to_string()));
