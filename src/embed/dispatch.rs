@@ -67,10 +67,7 @@ async fn dispatch_loop(rx: Receiver<Request>) {
             Some(tx) => tx.send(req).await,
             None => {
                 req.response
-                    .send(Err(JsValue::from_str(&format!(
-                        "\"{}\" not open",
-                        req.db_name
-                    ))))
+                    .send(Err(JsValue::from_str("database not open")))
                     .await;
             }
         };
@@ -97,7 +94,7 @@ pub async fn dispatch(db_name: String, rpc: Rpc, data: JsValue) -> Response {
     SENDER.lock().await.send(request).await;
     let receive_result = rx.recv().await;
     let result = match receive_result {
-        Err(e) => Err(JsValue::from_str(&e.to_string())),
+        Err(e) => Err(JsValue::from_str("receive channel closed")),
         Ok(v) => v,
     };
     debug!(
@@ -114,33 +111,26 @@ async fn do_open(conns: &mut ConnMap, req: &Request) -> Response {
         return Err("db_name must be non-empty".into());
     }
     if conns.contains_key(&req.db_name[..]) {
-        return Err(format!(
-            "Database \"{}\" has already been opened. Please close it before opening it again",
-            req.db_name
-        )
-        .into());
+        return Err(
+            "Database has already been opened. Please close it before opening it again".into(),
+        );
     }
 
     let open_req = serde_wasm_bindgen::from_value::<OpenRequest>(req.data.clone())
-        .map_err(|e| JsValue::from_str(&format!("Failed to read open request options: {}", e)))?;
+        .map_err(|e| JsValue::from_str("Failed to read open request options"))?;
 
     let kv: Box<dyn Store> = if open_req.use_memstore {
         Box::new(MemStore::new())
     } else {
         match IdbStore::new(&req.db_name[..]).await {
-            Err(e) => {
-                return Err(JsValue::from_str(&format!(
-                    "Failed to open \"{}\": {}",
-                    req.db_name, e
-                )))
-            }
+            Err(e) => return Err(JsValue::from_str("Failed to open")),
             Ok(store) => Box::new(store),
         }
     };
 
     let client_id = sync::client_id::init(kv.as_ref(), req.lc.clone())
         .await
-        .map_err(to_debug)?;
+        .map_err(|_| JsValue::from_str("Failed to initialize client ID"))?;
 
     let (tx, rx) = channel::<Request>(1);
     spawn_local(connection::process(
